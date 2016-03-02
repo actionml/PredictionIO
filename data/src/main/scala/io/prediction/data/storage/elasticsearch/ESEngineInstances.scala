@@ -74,17 +74,19 @@ class ESEngineInstances(client: Client, config: StorageClientConfig, index: Stri
     try {
       val response = client.prepareIndex(index, estype).
         setSource(write(i)).get
+      print(response.getId)
       response.getId
     } catch {
       case e: ElasticsearchException =>
+        error(index)
         error(e.getMessage)
         ""
     }
   }
 
-  def get(id: String): Option[EngineInstance] = {
+  def get(instanceId: String): Option[EngineInstance] = {
     try {
-      val response = client.prepareGet(index, estype, id).get
+      val response = client.prepareGet(index, estype, instanceId).get
       if (response.isExists) {
         Some(read[EngineInstance](response.getSourceAsString))
       } else {
@@ -139,15 +141,15 @@ class ESEngineInstances(client: Client, config: StorageClientConfig, index: Stri
 
   def update(i: EngineInstance): Unit = {
     try {
-      client.prepareUpdate(index, estype, i.id).setDoc(write(i)).get
+      client.prepareUpdate(index, estype, i.instanceId).setDoc(write(i)).get
     } catch {
       case e: ElasticsearchException => error(e.getMessage)
     }
   }
 
-  def delete(id: String): Unit = {
+  def delete(instanceId: String): Unit = {
     try {
-      val response = client.prepareDelete(index, estype, id).get
+      val response = client.prepareDelete(index, estype, instanceId).get
     } catch {
       case e: ElasticsearchException => error(e.getMessage)
     }

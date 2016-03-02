@@ -859,17 +859,17 @@ object Console extends Logging {
       val engineInstance = ca.engineInstanceId map { eid =>
         engineInstances.get(eid)
       } getOrElse {
-        engineInstances.getLatestCompleted(em.id, em.version, variantId)
+        engineInstances.getLatestCompleted(em.engineId, em.version, variantId)
       }
       engineInstance map { r =>
-        RunServer.newRunServer(ca, em, r.id)
+        RunServer.newRunServer(ca, em, r.instanceId)
       } getOrElse {
         ca.engineInstanceId map { eid =>
           error(
             s"Invalid engine instance ID ${ca.engineInstanceId}. Aborting.")
         } getOrElse {
           error(
-            s"No valid engine instance found for engine ${em.id} " +
+            s"No valid engine instance found for engine ${em.engineId} " +
               s"${em.version}.\nTry running 'train' before 'deploy'. Aborting.")
         }
         1
@@ -1171,7 +1171,7 @@ object Console extends Logging {
     val ha = java.security.MessageDigest.getInstance("SHA-1").
       digest(cwd.getBytes).map("%02x".format(_)).mkString
     val em = EngineManifest(
-      id = rand,
+      engineId = rand,
       version = ha,
       name = new File(cwd).getName,
       description = Some(manifestAutogenTag),
@@ -1209,12 +1209,12 @@ object Console extends Logging {
       engineVersion: Option[String])(
       op: EngineManifest => Int): Int = {
     val ej = readManifestJson(json)
-    val id = engineId getOrElse ej.id
+    val id = engineId getOrElse ej.engineId
     val version = engineVersion getOrElse ej.version
     storage.Storage.getMetaDataEngineManifests.get(id, version) map {
       op
     } getOrElse {
-      error(s"Engine ${id} ${version} cannot be found in the system.")
+      error(s"Engine ${engineId} ${version} cannot be found in the system.")
       error("Possible reasons:")
       error("- the engine is not yet built by the 'build' command;")
       error("- the meta data store is offline.")

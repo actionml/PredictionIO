@@ -22,7 +22,7 @@ import org.json4s._
 /** :: DeveloperApi ::
   * Stores parameters, model, and other information for each engine instance
   *
-  * @param id Engine instance ID.
+  * @param instanceId Engine instance ID.
   * @param status Status of the engine instance.
   * @param startTime Start time of the training/evaluation.
   * @param endTime End time of the training/evaluation.
@@ -41,7 +41,7 @@ import org.json4s._
   */
 @DeveloperApi
 case class EngineInstance(
-  id: String,
+  instanceId: String,
   status: String,
   startTime: DateTime,
   endTime: DateTime,
@@ -68,7 +68,7 @@ trait EngineInstances {
   def insert(i: EngineInstance): String
 
   /** Get an [[EngineInstance]] by ID */
-  def get(id: String): Option[EngineInstance]
+  def get(instanceId: String): Option[EngineInstance]
 
   /** Get all [[EngineInstance]]s */
   def getAll(): Seq[EngineInstance]
@@ -91,7 +91,7 @@ trait EngineInstances {
   def update(i: EngineInstance): Unit
 
   /** Delete an [[EngineInstance]] */
-  def delete(id: String): Unit
+  def delete(instanceId: String): Unit
 }
 
 /** :: DeveloperApi ::
@@ -106,7 +106,7 @@ class EngineInstanceSerializer
     case JObject(fields) =>
       implicit val formats = DefaultFormats
       val seed = EngineInstance(
-          id = "",
+          instanceId = "",
           status = "",
           startTime = DateTime.now,
           endTime = DateTime.now,
@@ -123,7 +123,7 @@ class EngineInstanceSerializer
           servingParams = "")
       fields.foldLeft(seed) { case (i, field) =>
         field match {
-          case JField("id", JString(id)) => i.copy(id = id)
+          case JField("instanceId", JString(instanceId)) => i.copy(instanceId = instanceId)
           case JField("status", JString(status)) => i.copy(status = status)
           case JField("startTime", JString(startTime)) =>
             i.copy(startTime = Utils.stringToDateTime(startTime))
@@ -157,7 +157,7 @@ class EngineInstanceSerializer
   {
     case i: EngineInstance =>
       JObject(
-        JField("id", JString(i.id)) ::
+        JField("instanceId", JString(i.instanceId)) ::
         JField("status", JString(i.status)) ::
         JField("startTime", JString(i.startTime.toString)) ::
         JField("endTime", JString(i.endTime.toString)) ::

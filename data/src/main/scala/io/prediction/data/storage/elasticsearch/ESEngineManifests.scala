@@ -30,20 +30,20 @@ class ESEngineManifests(client: Client, config: StorageClientConfig, index: Stri
   extends EngineManifests with Logging {
   implicit val formats = DefaultFormats + new EngineManifestSerializer
   private val estype = "engine_manifests"
-  private def esid(id: String, version: String) = s"$id $version"
+  private def esid(engineId: String, version: String) = s"$engineId $version"
 
   def insert(engineManifest: EngineManifest): Unit = {
     val json = write(engineManifest)
     val response = client.prepareIndex(
       index,
       estype,
-      esid(engineManifest.id, engineManifest.version)).
+      esid(engineManifest.engineId, engineManifest.version)).
       setSource(json).execute().actionGet()
   }
 
-  def get(id: String, version: String): Option[EngineManifest] = {
+  def get(engineId: String, version: String): Option[EngineManifest] = {
     try {
-      val response = client.prepareGet(index, estype, esid(id, version)).
+      val response = client.prepareGet(index, estype, esid(engineId, version)).
         execute().actionGet()
       if (response.isExists) {
         Some(read[EngineManifest](response.getSourceAsString))
@@ -71,9 +71,9 @@ class ESEngineManifests(client: Client, config: StorageClientConfig, index: Stri
   def update(engineManifest: EngineManifest, upsert: Boolean = false): Unit =
     insert(engineManifest)
 
-  def delete(id: String, version: String): Unit = {
+  def delete(engineId: String, version: String): Unit = {
     try {
-      client.prepareDelete(index, estype, esid(id, version)).execute().actionGet()
+      client.prepareDelete(index, estype, esid(engineId, version)).execute().actionGet()
     } catch {
       case e: ElasticsearchException => error(e.getMessage)
     }

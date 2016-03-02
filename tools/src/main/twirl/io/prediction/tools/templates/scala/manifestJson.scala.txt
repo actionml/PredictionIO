@@ -1,6 +1,6 @@
-@(id: String, version: String, name: String)
+@(engineId: String, version: String, name: String)
 {
-  "id": "@{id}",
+  "engineId": "@{engineId}",
   "version": "@{version}",
   "name": "@{name}",
   "description": "@{name}"

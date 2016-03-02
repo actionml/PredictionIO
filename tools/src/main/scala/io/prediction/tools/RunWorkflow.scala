@@ -86,7 +86,7 @@ object RunWorkflow extends Logging {
 
     val engineLocation = Seq(
       sys.env("PIO_FS_ENGINESDIR"),
-      em.id,
+      em.engineId,
       em.version)
 
     if (deployMode == "cluster") {
@@ -104,7 +104,7 @@ object RunWorkflow extends Logging {
         "--class",
         "io.prediction.workflow.CreateWorkflow",
         "--name",
-        s"PredictionIO $workMode: ${em.id} ${em.version} (${ca.common.batch})") ++
+        s"PredictionIO $workMode: ${em.engineId} ${em.version} (${ca.common.batch})") ++
       (if (!ca.build.uberJar) {
         Seq("--jars", em.files.mkString(","))
       } else Seq()) ++
@@ -130,7 +130,7 @@ object RunWorkflow extends Logging {
         "--env",
         pioEnvVars,
         "--engine-id",
-        em.id,
+        em.engineId,
         "--engine-version",
         em.version,
         "--engine-variant",
@@ -174,7 +174,7 @@ object RunWorkflow extends Logging {
     val jarFiles = em.files.map(new URI(_))
     val args = Seq(
       "--engine-id",
-      em.id,
+      em.engineId,
       "--engine-version",
       em.version,
       "--engine-variant",

@@ -215,7 +215,7 @@ object CreateServer extends Logging {
     val kryo = KryoInstantiator.newKryoInjection
 
     val modelsFromEngineInstance =
-      kryo.invert(modeldata.get(engineInstance.id).get.models).get.
+      kryo.invert(modeldata.get(engineInstance.instanceId).get.models).get.
       asInstanceOf[Seq[Any]]
 
     val batch = if (engineInstance.batch.nonEmpty) {
@@ -233,7 +233,7 @@ object CreateServer extends Logging {
     val models = engine.prepareDeploy(
       sparkContext,
       engineParams,
-      engineInstance.id,
+      engineInstance.instanceId,
       modelsFromEngineInstance,
       params = WorkflowParams()
     )
@@ -338,7 +338,7 @@ class MasterActor(
       log.info("Reload server command received.")
       val latestEngineInstance =
         CreateServer.engineInstances.getLatestCompleted(
-          manifest.id,
+          manifest.engineId,
           manifest.version,
           engineInstance.engineVariant)
       latestEngineInstance map { lr =>
@@ -353,7 +353,7 @@ class MasterActor(
         }
       } getOrElse {
         log.warning(
-          s"No latest completed engine instance for ${manifest.id} " +
+          s"No latest completed engine instance for ${manifest.engineId} " +
           s"${manifest.version}. Abort reloading.")
       }
     case x: Http.Bound =>
@@ -562,7 +562,7 @@ class ServerActor[Q, P](
                   "entityType" -> "pio_pr", // prediction result
                   "entityId" -> newPrId,
                   "properties" -> Map(
-                    "engineInstanceId" -> engineInstance.id,
+                    "engineInstanceId" -> engineInstance.instanceId,
                     "query" -> query,
                     "prediction" -> prediction)) ++ queryPrId
                 // At this point args.accessKey should be Some(String).

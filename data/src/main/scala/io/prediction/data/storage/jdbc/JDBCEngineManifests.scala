@@ -29,7 +29,7 @@ class JDBCEngineManifests(client: String, config: StorageClientConfig, prefix: S
   DB autoCommit { implicit session =>
     sql"""
     create table if not exists $tableName (
-      id varchar(100) not null primary key,
+      engineId varchar(100) not null primary key,
       version text not null,
       engineName text not null,
       description text,
@@ -40,7 +40,7 @@ class JDBCEngineManifests(client: String, config: StorageClientConfig, prefix: S
   def insert(m: EngineManifest): Unit = DB localTx { implicit session =>
     sql"""
     INSERT INTO $tableName VALUES(
-      ${m.id},
+      ${m.engineId},
       ${m.version},
       ${m.name},
       ${m.description},
@@ -48,23 +48,23 @@ class JDBCEngineManifests(client: String, config: StorageClientConfig, prefix: S
       ${m.engineFactory})""".update().apply()
   }
 
-  def get(id: String, version: String): Option[EngineManifest] = DB localTx { implicit session =>
+  def get(engineId: String, version: String): Option[EngineManifest] = DB localTx { implicit session =>
     sql"""
     SELECT
-      id,
+      engineId,
       version,
       engineName,
       description,
       files,
       engineFactory
-    FROM $tableName WHERE id = $id AND version = $version""".
+    FROM $tableName WHERE engineId = $engineId AND version = $version""".
       map(resultToEngineManifest).single().apply()
   }
 
   def getAll(): Seq[EngineManifest] = DB localTx { implicit session =>
     sql"""
     SELECT
-      id,
+      engineId,
       version,
       engineName,
       description,
@@ -82,7 +82,7 @@ class JDBCEngineManifests(client: String, config: StorageClientConfig, prefix: S
         description = ${m.description},
         files = ${m.files.mkString(",")},
         engineFactory = ${m.engineFactory}
-      where id = ${m.id} and version = ${m.version}""".update().apply()
+      where engineId = ${m.engineId} and version = ${m.version}""".update().apply()
     }
     if (r == 0) {
       if (upsert) {
@@ -93,15 +93,15 @@ class JDBCEngineManifests(client: String, config: StorageClientConfig, prefix: S
     }
   }
 
-  def delete(id: String, version: String): Unit = DB localTx { implicit session =>
-    sql"DELETE FROM $tableName WHERE id = $id AND version = $version".
+  def delete(engineId: String, version: String): Unit = DB localTx { implicit session =>
+    sql"DELETE FROM $tableName WHERE engineId = $engineId AND version = $version".
       update().apply()
   }
 
   /** Convert JDBC results to [[EngineManifest]] */
   def resultToEngineManifest(rs: WrappedResultSet): EngineManifest = {
     EngineManifest(
-      id = rs.string("id"),
+      engineId = rs.string("engineId"),
       version = rs.string("version"),
       name = rs.string("engineName"),
       description = rs.stringOpt("description"),

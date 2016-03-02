@@ -221,7 +221,7 @@ object CreateWorkflow extends Logging {
       }
 
       val engineInstance = EngineInstance(
-        id = "",
+        instanceId = "",
         status = "INIT",
         startTime = DateTime.now,
         endTime = DateTime.now,
@@ -249,7 +249,7 @@ object CreateWorkflow extends Logging {
         params = workflowParams,
         engine = trainableEngine,
         engineParams = engineParams,
-        engineInstance = engineInstance.copy(id = engineInstanceId))
+        engineInstance = engineInstance.copy(instanceId = engineInstanceId))
     } else {
       val workflowParams = WorkflowParams(
         verbose = wfc.verbosity,

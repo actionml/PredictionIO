@@ -29,10 +29,10 @@ class JDBCEngineInstances(client: String, config: StorageClientConfig, prefix: S
   DB autoCommit { implicit session =>
     sql"""
     create table if not exists $tableName (
-      id varchar(100) not null primary key,
+      instanceId varchar(100) not null primary key,
       status text not null,
-      startTime timestamp not null,
-      endTime timestamp not null,
+      startTime timestamp DEFAULT CURRENT_TIMESTAMP,
+      endTime timestamp DEFAULT CURRENT_TIMESTAMP,
       engineId text not null,
       engineVersion text not null,
       engineVariant text not null,
@@ -47,10 +47,10 @@ class JDBCEngineInstances(client: String, config: StorageClientConfig, prefix: S
   }
 
   def insert(i: EngineInstance): String = DB localTx { implicit session =>
-    val id = java.util.UUID.randomUUID().toString
+    val instanceId = java.util.UUID.randomUUID().toString
     sql"""
     INSERT INTO $tableName VALUES(
-      $id,
+      $instanceId,
       ${i.status},
       ${i.startTime},
       ${i.endTime},
@@ -65,13 +65,13 @@ class JDBCEngineInstances(client: String, config: StorageClientConfig, prefix: S
       ${i.preparatorParams},
       ${i.algorithmsParams},
       ${i.servingParams})""".update().apply()
-    id
+    instanceId
   }
 
-  def get(id: String): Option[EngineInstance] = DB localTx { implicit session =>
+  def get(instanceId: String): Option[EngineInstance] = DB localTx { implicit session =>
     sql"""
     SELECT
-      id,
+      instanceId,
       status,
       startTime,
       endTime,
@@ -86,14 +86,14 @@ class JDBCEngineInstances(client: String, config: StorageClientConfig, prefix: S
       preparatorParams,
       algorithmsParams,
       servingParams
-    FROM $tableName WHERE id = $id""".map(resultToEngineInstance).
+    FROM $tableName WHERE instanceId = $instanceId""".map(resultToEngineInstance).
       single().apply()
   }
 
   def getAll(): Seq[EngineInstance] = DB localTx { implicit session =>
     sql"""
     SELECT
-      id,
+      instanceId,
       status,
       startTime,
       endTime,
@@ -123,7 +123,7 @@ class JDBCEngineInstances(client: String, config: StorageClientConfig, prefix: S
     engineVariant: String): Seq[EngineInstance] = DB localTx { implicit s =>
     sql"""
     SELECT
-      id,
+      instanceId,
       status,
       startTime,
       endTime,
@@ -165,17 +165,17 @@ class JDBCEngineInstances(client: String, config: StorageClientConfig, prefix: S
       preparatorParams = ${i.preparatorParams},
       algorithmsParams = ${i.algorithmsParams},
       servingParams = ${i.servingParams}
-    where id = ${i.id}""".update().apply()
+    where instanceId = ${i.instanceId}""".update().apply()
   }
 
-  def delete(id: String): Unit = DB localTx { implicit session =>
-    sql"DELETE FROM $tableName WHERE id = $id".update().apply()
+  def delete(instanceId: String): Unit = DB localTx { implicit session =>
+    sql"DELETE FROM $tableName WHERE instanceId = $instanceId".update().apply()
   }
 
   /** Convert JDBC results to [[EngineInstance]] */
   def resultToEngineInstance(rs: WrappedResultSet): EngineInstance = {
     EngineInstance(
-      id = rs.string("id"),
+      instanceId = rs.string("instanceId"),
       status = rs.string("status"),
       startTime = rs.jodaDateTime("startTime"),
       endTime = rs.jodaDateTime("endTime"),

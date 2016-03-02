@@ -1,6 +1,6 @@
 @(name: String, engineFactory: String)
 {
-  "id": "default",
+  "instanceId": "default",
   "description": "@{name}",
   "engineFactory": "@{engineFactory}",
   "datasource": {

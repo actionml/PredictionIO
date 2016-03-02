@@ -31,8 +31,10 @@ case class WorkflowParams(
   verbose: Int = 2,
   saveModel: Boolean = true,
   sparkEnv: Map[String, String] =
-    Map[String, String]("spark.executor.extraClassPath" -> "."),
-  skipSanityCheck: Boolean = false,
+    //Map[String, String]("spark.executor.extraClassPath" -> "."),
+      Map[String, String](),  
+
+skipSanityCheck: Boolean = false,
   stopAfterRead: Boolean = false,
   stopAfterPrepare: Boolean = false) {
   // Temporary workaround for WorkflowParamsBuilder for Java. It doesn't support

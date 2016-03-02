@@ -9,10 +9,11 @@
 # License: http://www.apache.org/licenses/LICENSE-2.0
 
 OS=`uname`
-PIO_VERSION=0.9.5
-SPARK_VERSION=1.5.1
+
+PIO_VERSION=0.9.6
+SPARK_VERSION=1.6.0
 ELASTICSEARCH_VERSION=2.1.1
-HBASE_VERSION=1.0.0
+HBASE_VERSION=1.1.3
 POSTGRES_VERSION=9.4-1204.jdbc41
 MYSQL_VERSION=5.1.37
 PIO_DIR=$HOME/PredictionIO
@@ -25,6 +26,7 @@ DISTRO_OTHER="Other"
 
 PGSQL="PostgreSQL"
 MYSQL="MySQL"
+ES_PGSQL="Elasticsearch + PostgreSQL"
 ES_HB="Elasticsearch + HBase"
 
 # Ask a yes/no question, with a default of "yes".
@@ -143,13 +145,16 @@ else
     read -e -p "Vendor path ($pio_dir/vendors): " vendors_dir
     vendors_dir=${vendors_dir:-$pio_dir/vendors}
 
-    echo -e "\033[1mPlease choose between the following sources (1, 2 or 3):\033[0m"
-    select source_setup in "$PGSQL" "$MYSQL" "$ES_HB"; do
+    echo -e "\033[1mPlease choose between the following sources (1, 2, 3 or 4):\033[0m"
+    select source_setup in "$PGSQL" "$MYSQL" "$ES_PGSQL" "$ES_HB"; do
       case ${source_setup} in
         "$PGSQL")
           break
           ;;
         "$MYSQL")
+          break
+          ;;
+        "$ES_PGSQL")
           break
           ;;
         "$ES_HB")
@@ -195,6 +200,11 @@ else
         ;;
       "$MYSQL")
         # MySQL installed by apt-get so no path is printed beforehand
+        break
+        ;;
+      "$ES_PGSQL")
+        # PostgreSQL installed by apt-get so no path is printed beforehand
+        echo "Elasticsearch: $elasticsearch_dir"
         break
         ;;
       "$ES_HB")
@@ -324,9 +334,8 @@ ${SED_CMD} "s|SPARK_HOME=.*|SPARK_HOME=$spark_dir|g" ${pio_dir}/conf/pio-env.sh
 
 echo -e "\033[1;32mSpark setup done!\033[0m"
 
-case $source_setup in
-  "$PGSQL")
-    if [[ ${distribution} = "$DISTRO_DEBIAN" ]]; then
+installPGSQL () {
+  if [[ ${distribution} = "$DISTRO_DEBIAN" ]]; then
       echo -e "\033[1;36mInstalling PostgreSQL...\033[0m"
       sudo apt-get install postgresql -y
       echo -e "\033[1;36mPlease use the default password 'pio' when prompted to enter one\033[0m"
@@ -340,6 +349,31 @@ case $source_setup in
     fi
     curl -O https://jdbc.postgresql.org/download/postgresql-${POSTGRES_VERSION}.jar
     mv postgresql-${POSTGRES_VERSION}.jar ${PIO_DIR}/lib/
+}
+
+installES() {
+    echo -e "\033[1;36mStarting Elasticsearch setup in:\033[0m $elasticsearch_dir"
+    if [[ -e elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz ]]; then
+      if confirm "Delete existing elasticsearch-$ELASTICSEARCH_VERSION.tar.gz?"; then
+        rm elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+      fi
+    fi
+    if [[ ! -e elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz ]]; then
+      echo "Downloading Elasticsearch..."
+      #curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+      curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/${ELASTICSEARCH_VERSION}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+    fi
+    tar zxf elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+    rm -rf ${elasticsearch_dir}
+    mv elasticsearch-${ELASTICSEARCH_VERSION} ${elasticsearch_dir}
+
+    echo "Updating: $elasticsearch_dir/config/elasticsearch.yml"
+    echo 'network.host: 127.0.0.1' >> ${elasticsearch_dir}/config/elasticsearch.yml
+}
+
+case $source_setup in
+  "$PGSQL")
+    installPGSQL
     ;;
   "$MYSQL")
     if [[ ${distribution} = "$DISTRO_DEBIAN" ]]; then
@@ -361,25 +395,26 @@ case $source_setup in
     curl -O http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.37/mysql-connector-java-${MYSQL_VERSION}.jar
     mv mysql-connector-java-${MYSQL_VERSION}.jar ${PIO_DIR}/lib/
     ;;
+  "$ES_PGSQL")
+    # PGSQL
+    installPGSQL
+    echo "Updating: $pio_dir/conf/pio-env.sh"
+    ${SED_CMD} "s|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=PGSQL|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=ELASTICSEARCH|" ${pio_dir}/conf/pio-env.sh
+    echo -e "\033[1;32mPGSQL setup done!\033[0m"
+
+    # Elasticsearch
+    installES
+    echo "Updating: $pio_dir/conf/pio-env.sh"
+    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_TYPE=elasticsearch|PIO_STORAGE_SOURCES_ELASTICSEARCH_TYPE=elasticsearch|" ${pio_dir}/conf/pio-env.sh
+    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_HOSTS=localhost|PIO_STORAGE_SOURCES_ELASTICSEARCH_HOSTS=localhost|" ${pio_dir}/conf/pio-env.sh
+    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_PORTS=9300|PIO_STORAGE_SOURCES_ELASTICSEARCH_PORTS=9300|" ${pio_dir}/conf/pio-env.sh
+    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_HOME=.*|PIO_STORAGE_SOURCES_ELASTICSEARCH_HOME=$elasticsearch_dir|" ${pio_dir}/conf/pio-env.sh
+
+    echo -e "\033[1;32mElasticsearch setup done!\033[0m"
+    ;;
   "$ES_HB")
     # Elasticsearch
-    echo -e "\033[1;36mStarting Elasticsearch setup in:\033[0m $elasticsearch_dir"
-    if [[ -e elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz ]]; then
-      if confirm "Delete existing elasticsearch-$ELASTICSEARCH_VERSION.tar.gz?"; then
-        rm elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
-      fi
-    fi
-    if [[ ! -e elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz ]]; then
-      echo "Downloading Elasticsearch..."
-      curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/${ELASTICSEARCH_VERSION}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
-    fi
-    tar zxf elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
-    rm -rf ${elasticsearch_dir}
-    mv elasticsearch-${ELASTICSEARCH_VERSION} ${elasticsearch_dir}
-
-    echo "Updating: $elasticsearch_dir/config/elasticsearch.yml"
-    echo 'network.host: 127.0.0.1' >> ${elasticsearch_dir}/config/elasticsearch.yml
-
+    installES
     echo "Updating: $pio_dir/conf/pio-env.sh"
     ${SED_CMD} "s|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=PGSQL|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=ELASTICSEARCH|" ${pio_dir}/conf/pio-env.sh
     ${SED_CMD} "s|PIO_STORAGE_REPOSITORIES_MODELDATA_SOURCE=PGSQL|PIO_STORAGE_REPOSITORIES_MODELDATA_SOURCE=LOCALFS|" ${pio_dir}/conf/pio-env.sh
@@ -388,7 +423,6 @@ case $source_setup in
     ${SED_CMD} "s|# PIO_STORAGE_SOURCES_LOCALFS|PIO_STORAGE_SOURCES_LOCALFS|" ${pio_dir}/conf/pio-env.sh
     ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_TYPE|PIO_STORAGE_SOURCES_ELASTICSEARCH_TYPE|" ${pio_dir}/conf/pio-env.sh
     ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_HOME=.*|PIO_STORAGE_SOURCES_ELASTICSEARCH_HOME=$elasticsearch_dir|" ${pio_dir}/conf/pio-env.sh
-
     echo -e "\033[1;32mElasticsearch setup done!\033[0m"
 
     # HBase
@@ -400,7 +434,7 @@ case $source_setup in
     fi
     if [[ ! -e hbase-${HBASE_VERSION}-bin.tar.gz ]]; then
       echo "Downloading HBase..."
-      curl -O http://archive.apache.org/dist/hbase/hbase-${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz
+      curl -O http://archive.apache.org/dist/hbase/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz
     fi
     tar zxf hbase-${HBASE_VERSION}-bin.tar.gz
     rm -rf ${hbase_dir}

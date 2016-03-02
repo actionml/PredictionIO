@@ -22,7 +22,7 @@ import org.json4s._
   * Provides a way to discover engines by ID and version in a distributed
   * environment
   *
-  * @param id Unique identifier of an engine.
+  * @param engineId Unique identifier of an engine.
   * @param version Engine version string.
   * @param name A short and descriptive name for the engine.
   * @param description A long description of the engine.
@@ -32,7 +32,7 @@ import org.json4s._
   */
 @DeveloperApi
 case class EngineManifest(
-  id: String,
+  engineId: String,
   version: String,
   name: String,
   description: Option[String],
@@ -50,7 +50,7 @@ trait EngineManifests {
   def insert(engineManifest: EngineManifest): Unit
 
   /** Get an [[EngineManifest]] by its ID */
-  def get(id: String, version: String): Option[EngineManifest]
+  def get(engineId: String, version: String): Option[EngineManifest]
 
   /** Get all [[EngineManifest]] */
   def getAll(): Seq[EngineManifest]
@@ -59,7 +59,7 @@ trait EngineManifests {
   def update(engineInfo: EngineManifest, upsert: Boolean = false): Unit
 
   /** Delete an [[EngineManifest]] by its ID */
-  def delete(id: String, version: String): Unit
+  def delete(engineId: String, version: String): Unit
 }
 
 /** :: DeveloperApi ::
@@ -73,7 +73,7 @@ class EngineManifestSerializer
   {
     case JObject(fields) =>
       val seed = EngineManifest(
-        id = "",
+        engineId = "",
         version = "",
         name = "",
         description = None,
@@ -81,7 +81,7 @@ class EngineManifestSerializer
         engineFactory = "")
       fields.foldLeft(seed) { case (enginemanifest, field) =>
         field match {
-          case JField("id", JString(id)) => enginemanifest.copy(id = id)
+          case JField("engineId", JString(engineId)) => enginemanifest.copy(engineId = engineId)
           case JField("version", JString(version)) =>
             enginemanifest.copy(version = version)
           case JField("name", JString(name)) => enginemanifest.copy(name = name)
@@ -103,7 +103,7 @@ class EngineManifestSerializer
   {
     case enginemanifest: EngineManifest =>
       JObject(
-        JField("id", JString(enginemanifest.id)) ::
+        JField("engineId", JString(enginemanifest.engineId)) ::
         JField("version", JString(enginemanifest.version)) ::
         JField("name", JString(enginemanifest.name)) ::
         JField("description",

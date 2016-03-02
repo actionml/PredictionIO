@@ -65,7 +65,7 @@ object CoreWorkflow {
       val models: Seq[Any] = engine.train(
         sc = sc,
         engineParams = engineParams,
-        engineInstanceId = engineInstance.id,
+        engineInstanceId = engineInstance.instanceId,
         params = params
       )
 
@@ -75,7 +75,7 @@ object CoreWorkflow {
       
       logger.info("Inserting persistent model")
       Storage.getModelDataModels.insert(Model(
-        id = engineInstance.id,
+        id = engineInstance.instanceId,
         models = kryo(models)))
 
       logger.info("Updating engine instance")

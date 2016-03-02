@@ -46,7 +46,7 @@ object RegisterEngine extends Logging {
     }
     val engineManifest = read[EngineManifest](jsonString)
 
-    info(s"Registering engine ${engineManifest.id} ${engineManifest.version}")
+    info(s"Registering engine ${engineManifest.engineId} ${engineManifest.version}")
     engineManifests.update(
       engineManifest.copy(files = engineFiles.map(_.toURI.toString)), true)
   }
@@ -61,7 +61,7 @@ object RegisterEngine extends Logging {
     }
     val fileEngineManifest = read[EngineManifest](jsonString)
     val engineManifest = engineManifests.get(
-      fileEngineManifest.id,
+      fileEngineManifest.engineId,
       fileEngineManifest.version)
 
     engineManifest map { em =>
@@ -74,10 +74,10 @@ object RegisterEngine extends Logging {
         fs.delete(path, false)
       }
 
-      engineManifests.delete(em.id, em.version)
-      info(s"Unregistered engine ${em.id} ${em.version}")
+      engineManifests.delete(em.engineId, em.version)
+      info(s"Unregistered engine ${em.engineId} ${em.version}")
     } getOrElse {
-      error(s"${fileEngineManifest.id} ${fileEngineManifest.version} is not " +
+      error(s"${fileEngineManifest.engineId} ${fileEngineManifest.version} is not " +
         "registered.")
     }
   }
