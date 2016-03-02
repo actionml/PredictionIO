@@ -60,6 +60,19 @@ trait LEvents {
   def remove(appId: Int, channelId: Option[Int] = None): Boolean
 
   /** :: DeveloperApi ::
+    * Remove Event Store for an app ID insert new events.
+    *
+    * @param events new events
+    * @param appId App ID
+    * @param channelId Optional channel ID
+    * @return true if removal was successful; false otherwise.
+    */
+  @DeveloperApi
+  def wipe(
+    events: Iterable[Event], appId: Int, channelId: Option[Int] = None
+  )(implicit ec: ExecutionContext): Future[Iterable[String]]
+
+  /** :: DeveloperApi ::
     * Close this Event Store interface object, e.g. close connection, release
     * resources, etc.
     */

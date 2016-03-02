@@ -1,5 +1,8 @@
 package com.test
 
+import io.prediction.core.CleanedDataSource
+import io.prediction.core.EventWindow
+
 import io.prediction.controller.PDataSource
 import io.prediction.controller.EmptyEvaluationInfo
 import io.prediction.controller.EmptyActualResult
@@ -13,17 +16,20 @@ import org.apache.spark.rdd.RDD
 
 import grizzled.slf4j.Logger
 
-case class DataSourceParams(appId: Int) extends Params
+case class DataSourceParams(appName: String, eventWindow: Option[EventWindow]) extends Params
 
 class DataSource(val dsp: DataSourceParams)
   extends PDataSource[TrainingData,
-      EmptyEvaluationInfo, Query, EmptyActualResult] {
+      EmptyEvaluationInfo, Query, EmptyActualResult] with CleanedDataSource {
 
   @transient lazy val logger = Logger[this.type]
 
+  override def appName = dsp.appName
+  override def eventWindow = dsp.eventWindow
+
   override
   def readTraining(sc: SparkContext): TrainingData = {
-    val eventsDb = Storage.getPEvents()
+    val eventsDb = cleanedPEvents(sc)
 
     // create a RDD of (entityID, User)
     val usersRDD: RDD[(String, User)] = eventsDb.aggregateProperties(

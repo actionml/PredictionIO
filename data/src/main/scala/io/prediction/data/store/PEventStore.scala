@@ -24,12 +24,29 @@ import org.joda.time.DateTime
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import scala.concurrent.ExecutionContext
+
 /** This object provides a set of operation to access Event Store
   * with Spark's parallelization
   */
 object PEventStore {
 
   @transient lazy private val eventsDb = Storage.getPEvents()
+
+  /**
+    * Replace events in Event Store
+    *
+    * @param events new events
+    * @param appId delete all events of appId
+    * @param channelId delete all events of channelId
+    */
+  def wipe(
+    events: RDD[Event],
+    appId: Int,
+    channelId: Option[Int]
+  )(sc: SparkContext): Unit = {
+    eventsDb.wipe(events, appId, channelId)(sc)
+  }
 
   /** Read events from Event Store
     *

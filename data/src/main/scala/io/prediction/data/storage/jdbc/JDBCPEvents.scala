@@ -113,6 +113,27 @@ class JDBCPEvents(client: String, config: StorageClientConfig, namespace: String
       }).cache()
   }
 
+
+  /** :: DeveloperApi ::
+    * Clean old events from database
+    *
+    * @param appId     the app ID
+    * @param channelId channel ID (default channel if it's None)
+    * @param sc        Spark Context
+    */
+  override def wipe(
+    events: RDD[Event],
+    appId: Int,
+    channelId: Option[Int])
+    (sc: SparkContext): Unit = {
+
+    val sqlContext = new SQLContext(sc)
+
+    val tableName = JDBCUtils.eventTableName(namespace, appId, channelId)
+    sqlContext.sql(s"drop table if exists $tableName")
+    write(events, appId, channelId)(sc)
+  }
+
   def write(events: RDD[Event], appId: Int, channelId: Option[Int])(sc: SparkContext): Unit = {
     val sqlContext = new SQLContext(sc)
 

@@ -88,6 +88,24 @@ class JDBCLEvents(
     }
   }
 
+
+  /** :: DeveloperApi ::
+    * Remove Event Store for an app ID insert new events.
+    *
+    * @param events    new events
+    * @param appId     App ID
+    * @param channelId Optional channel ID
+    * @return true if removal was successful; false otherwise.
+    */
+  override def wipe(
+    events: Iterable[Event],
+    appId: Int,
+    channelId: Option[Int]
+  )(implicit ec: ExecutionContext): Future[Iterable[String]] = {
+    remove(appId, channelId)
+    Future.sequence(events.map(futureInsert(_, appId, channelId)))
+  }
+
   def remove(appId: Int, channelId: Option[Int] = None): Boolean =
     DB autoCommit { implicit session =>
       SQL(s"""

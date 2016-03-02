@@ -87,6 +87,15 @@ class HBLEvents(val client: HBClient, config: StorageClientConfig, val namespace
   }
 
   override
+  def wipe(
+    events: Iterable[Event],
+    appId: Int,
+    channelId: Option[Int] = None)(implicit ec: ExecutionContext): Future[Iterable[String]] = {
+    remove(appId, channelId)
+    Future.sequence(events.map(futureInsert(_, appId, channelId)))
+  }
+
+  override
   def close(): Unit = {
     client.admin.close()
     client.connection.close()
