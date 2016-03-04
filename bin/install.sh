@@ -12,7 +12,9 @@ OS=`uname`
 
 PIO_VERSION=0.9.6
 SPARK_VERSION=1.6.0
-ELASTICSEARCH_VERSION=2.1.1
+ELASTICSEARCH_VERSION1=1.7.5
+ELASTICSEARCH_VERSION2=2.2.0
+ELASTICSEARCH_VERSION=$ELASTICSEARCH_VERSION2
 HBASE_VERSION=1.1.3
 POSTGRES_VERSION=9.4-1204.jdbc41
 MYSQL_VERSION=5.1.37
@@ -164,6 +166,24 @@ else
           ;;
       esac
     done
+
+    es_sources=("$ES_PGSQL" "$ES_HB")
+
+    if [[ $es_sources[@] =~ "$source_setup" ]]; then
+      echo -e "\033[1mPlease choose between the following Elasticsearch versions (1 or 2):\033[0m"
+      select ELASTICSEARCH_VERSION in "$ELASTICSEARCH_VERSION1" "$ELASTICSEARCH_VERSION2"; do
+        case ${es_version} in
+          "$ELASTICSEARCH_VERSION1")
+            break
+            ;;
+          "$ELASTICSEARCH_VERSION2")
+            break
+            ;;
+          *)
+            ;;
+        esac
+      done
+    fi
 
     if confirm "Receive updates?"; then
       guess_email=''
