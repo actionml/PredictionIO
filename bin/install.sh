@@ -360,8 +360,15 @@ installES() {
     fi
     if [[ ! -e elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz ]]; then
       echo "Downloading Elasticsearch..."
-      #curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
-      curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/${ELASTICSEARCH_VERSION}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+
+      if [[ "${ELASTICSEARCH_VERSION}" =~ ^2\. ]]; then
+        curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/${ELASTICSEARCH_VERSION}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+      elif [[ "${ELASTICSEARCH_VERSION}" =~ ^1\. ]]; then
+        curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+      else
+        echo -e "\033[1;31mUnsupported Elasticsearch version ${ELASTICSEARCH_VERSION} \033[0m"
+        exit 4
+      fi
     fi
     tar zxf elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
     rm -rf ${elasticsearch_dir}
@@ -390,7 +397,7 @@ case $source_setup in
     else
       echo -e "\033[1;31mYour distribution not yet supported for automatic install :(\033[0m"
       echo -e "\033[1;31mPlease install MySQL manually!\033[0m"
-      exit 4
+      exit 5
     fi
     curl -O http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.37/mysql-connector-java-${MYSQL_VERSION}.jar
     mv mysql-connector-java-${MYSQL_VERSION}.jar ${PIO_DIR}/lib/
