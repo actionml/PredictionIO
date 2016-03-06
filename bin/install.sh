@@ -167,9 +167,7 @@ else
       esac
     done
 
-    es_sources=("$ES_PGSQL" "$ES_HB")
-
-    if [[ $es_sources[@] =~ "$source_setup" ]]; then
+    if [[ "$source_setup" == "$ES_PGSQL" || "$source_setup" == "$ES_HB" ]]; then
       echo -e "\033[1mPlease choose between the following Elasticsearch versions (1 or 2):\033[0m"
       select es_version in "$ELASTICSEARCH_VERSION1" "$ELASTICSEARCH_VERSION2"; do
         case ${es_version} in
