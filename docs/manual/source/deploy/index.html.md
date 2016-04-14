@@ -4,6 +4,8 @@ title: Deploying an Engine
 
 An engine must be **built** (i.e. `pio build`) and **trained** (i.e. `pio train`)  before it can be deployed as a web service.
 
+WARNING: The engine server is not protected by authentication, and the instructions below assume deployment in a trusted environment. See the section [Deploying with AWS](/system/deploy-cloudformation/) for a production deployment example.
+
 ## Deploying an Engine the First Time
 
 After you have [downloaded an Engine Template](/start/download/),  you can deploy it with these steps:
@@ -15,7 +17,7 @@ After you have [downloaded an Engine Template](/start/download/),  you can deplo
 
 A deployed engine listens to port 8000 by default. Your application can [send query to retrieve prediction](/appintegration/) in real-time through the REST interface. 
 
-**Note**: a new engine depoyed as above will have no data to start with. Your engine may  come with a `data/` directory with some sample data that you can import, not all have this. Check the quickstart instructions for your template.
+**Note**: a new engine deployed as above will have no data to start with. Your engine may  come with a `data/` directory with some sample data that you can import, not all have this. Check the quickstart instructions for your template.
 
 ## Update Model with New Data
 

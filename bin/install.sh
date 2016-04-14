@@ -75,7 +75,6 @@ if [[ "$OS" = "Linux" && $(cat /proc/1/cgroup) == *cpu:/docker/* ]]; then
   echo -e "\033[1;33mForcing Docker defaults!\033[0m"
   pio_dir=${PIO_DIR}
   vendors_dir=${pio_dir}/vendors
-  source_setup=${ES_HB}
 
   spark_dir=${vendors_dir}/spark-${SPARK_VERSION}
   elasticsearch_dir=${vendors_dir}/elasticsearch-${ELASTICSEARCH_VERSION}
@@ -179,7 +178,7 @@ else
       fi
       email=${email:-$guess_email}
 
-      url="http://direct.prediction.io/$PIO_VERSION/install.json/install/install/$email/"
+      url="https://direct.prediction.io/$PIO_VERSION/install.json/install/install/$email/"
       curl --silent ${url} > /dev/null
     fi
 
@@ -288,17 +287,11 @@ echo -e "\033[1;36mStarting PredictionIO setup in:\033[0m $pio_dir"
 cp ${PIO_FILE} ${TEMP_DIR}
 cd ${TEMP_DIR}
 
-# delete existing tmp file before download again
-#if [[ -e  ${PIO_FILE} ]]; then
-#  if confirm "Delete existing $PIO_FILE?"; then
-#    rm ${PIO_FILE}
-#  fi
-#fi
+if [[ ! -e ${PIO_FILE} ]]; then
+  echo "Downloading PredictionIO..."
+  curl -OL https://github.com/actionML/PredictionIO/releases/download/v${PIO_VERSION}/${PIO_FILE} 
+fi
 
-#if [[ ! -e ${PIO_FILE} ]]; then
-#  echo "Downloading PredictionIO..."
-#  curl -O https://d8k1yxp8elc6b.cloudfront.net/${PIO_FILE}
-#fi
 tar zxf ${PIO_FILE}
 rm -rf ${pio_dir}
 mv PredictionIO-${PIO_VERSION} ${pio_dir}
@@ -317,11 +310,6 @@ mkdir ${vendors_dir}
 
 # Spark
 echo -e "\033[1;36mStarting Spark setup in:\033[0m $spark_dir"
-if [[ -e spark-${SPARK_VERSION}-bin-hadoop2.6.tgz ]]; then
-  if confirm "Delete existing spark-$SPARK_VERSION-bin-hadoop2.6.tgz?"; then
-    rm spark-${SPARK_VERSION}-bin-hadoop2.6.tgz
-  fi
-fi
 if [[ ! -e spark-${SPARK_VERSION}-bin-hadoop2.6.tgz ]]; then
   echo "Downloading Spark..."
   curl -O http://www-us.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop2.6.tgz
@@ -350,6 +338,10 @@ installPGSQL () {
     fi
     curl -O https://jdbc.postgresql.org/download/postgresql-${POSTGRES_VERSION}.jar
     mv postgresql-${POSTGRES_VERSION}.jar ${PIO_DIR}/lib/
+
+    echo "Updating: $pio_dir/conf/pio-env.sh"
+    ${SED_CMD} "s|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=PGSQL|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=ELASTICSEARCH|" ${pio_dir}/conf/pio-env.sh
+    echo -e "\033[1;32mPGSQL setup done!\033[0m"
 }
 
 installES() {
@@ -395,23 +387,6 @@ case $source_setup in
     curl -O http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.37/mysql-connector-java-${MYSQL_VERSION}.jar
     mv mysql-connector-java-${MYSQL_VERSION}.jar ${PIO_DIR}/lib/
     ;;
-  "$ES_PGSQL")
-    # PGSQL
-    installPGSQL
-    echo "Updating: $pio_dir/conf/pio-env.sh"
-    ${SED_CMD} "s|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=PGSQL|PIO_STORAGE_REPOSITORIES_METADATA_SOURCE=ELASTICSEARCH|" ${pio_dir}/conf/pio-env.sh
-    echo -e "\033[1;32mPGSQL setup done!\033[0m"
-
-    # Elasticsearch
-    installES
-    echo "Updating: $pio_dir/conf/pio-env.sh"
-    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_TYPE=elasticsearch|PIO_STORAGE_SOURCES_ELASTICSEARCH_TYPE=elasticsearch|" ${pio_dir}/conf/pio-env.sh
-    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_HOSTS=localhost|PIO_STORAGE_SOURCES_ELASTICSEARCH_HOSTS=localhost|" ${pio_dir}/conf/pio-env.sh
-    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_PORTS=9300|PIO_STORAGE_SOURCES_ELASTICSEARCH_PORTS=9300|" ${pio_dir}/conf/pio-env.sh
-    ${SED_CMD} "s|# PIO_STORAGE_SOURCES_ELASTICSEARCH_HOME=.*|PIO_STORAGE_SOURCES_ELASTICSEARCH_HOME=$elasticsearch_dir|" ${pio_dir}/conf/pio-env.sh
-
-    echo -e "\033[1;32mElasticsearch setup done!\033[0m"
-    ;;
   "$ES_HB")
     # Elasticsearch
     installES
@@ -427,11 +402,6 @@ case $source_setup in
 
     # HBase
     echo -e "\033[1;36mStarting HBase setup in:\033[0m $hbase_dir"
-    if [[ -e hbase-${HBASE_VERSION}-bin.tar.gz ]]; then
-      if confirm "Delete existing hbase-$HBASE_VERSION-bin.tar.gz?"; then
-        rm hbase-${HBASE_VERSION}-bin.tar.gz
-      fi
-    fi
     if [[ ! -e hbase-${HBASE_VERSION}-bin.tar.gz ]]; then
       echo "Downloading HBase..."
       curl -O http://archive.apache.org/dist/hbase/${HBASE_VERSION}/hbase-${HBASE_VERSION}-bin.tar.gz
