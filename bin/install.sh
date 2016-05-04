@@ -12,7 +12,9 @@ OS=`uname`
 
 PIO_VERSION=0.9.6
 SPARK_VERSION=1.6.0
-ELASTICSEARCH_VERSION=2.1.1
+ELASTICSEARCH_VERSION1=1.7.5
+ELASTICSEARCH_VERSION2=2.1.1
+ELASTICSEARCH_VERSION=$ELASTICSEARCH_VERSION2
 HBASE_VERSION=1.1.3
 POSTGRES_VERSION=9.4-1204.jdbc41
 MYSQL_VERSION=5.1.37
@@ -164,6 +166,24 @@ else
           ;;
       esac
     done
+
+    if [[ "$source_setup" == "$ES_PGSQL" || "$source_setup" == "$ES_HB" ]]; then
+      echo -e "\033[1mPlease choose between the following Elasticsearch versions (1 or 2):\033[0m"
+      select es_version in "$ELASTICSEARCH_VERSION1" "$ELASTICSEARCH_VERSION2"; do
+        case ${es_version} in
+          "$ELASTICSEARCH_VERSION1")
+            break
+            ;;
+          "$ELASTICSEARCH_VERSION2")
+            break
+            ;;
+          *)
+            ;;
+        esac
+      done
+    fi
+
+    ELASTICSEARCH_VERSION=$es_version
 
     if confirm "Receive updates?"; then
       guess_email=''
@@ -360,8 +380,15 @@ installES() {
     fi
     if [[ ! -e elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz ]]; then
       echo "Downloading Elasticsearch..."
-      #curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
-      curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/${ELASTICSEARCH_VERSION}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+
+      if [[ "${ELASTICSEARCH_VERSION}" =~ ^2\. ]]; then
+        curl -O https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/${ELASTICSEARCH_VERSION}/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+      elif [[ "${ELASTICSEARCH_VERSION}" =~ ^1\. ]]; then
+        curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
+      else
+        echo -e "\033[1;31mUnsupported Elasticsearch version ${ELASTICSEARCH_VERSION} \033[0m"
+        exit 4
+      fi
     fi
     tar zxf elasticsearch-${ELASTICSEARCH_VERSION}.tar.gz
     rm -rf ${elasticsearch_dir}
@@ -390,7 +417,7 @@ case $source_setup in
     else
       echo -e "\033[1;31mYour distribution not yet supported for automatic install :(\033[0m"
       echo -e "\033[1;31mPlease install MySQL manually!\033[0m"
-      exit 4
+      exit 5
     fi
     curl -O http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.37/mysql-connector-java-${MYSQL_VERSION}.jar
     mv mysql-connector-java-${MYSQL_VERSION}.jar ${PIO_DIR}/lib/
