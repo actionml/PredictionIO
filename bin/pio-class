@@ -81,6 +81,17 @@ else
   CLASSPATH=${classpath_output}
 fi
 
+# PIO Log directory
+if [ -z $PIO_LOG_DIR ] ; then
+  # default is to write log into the current directory
+  PIO_LOG_DIR=./
+  touch $PIO_LOG_DIR/pio.log > /dev/null 2>&1
+  if [ $? != 0 ] ; then
+    PIO_LOG_DIR=$HOME
+  fi
+fi
+
 export CLASSPATH
+export JAVA_OPTS="$JAVA_OPTS -Dpio.log.dir=$PIO_LOG_DIR"
 
 exec "$RUNNER" -cp "$CLASSPATH" $JAVA_OPTS "$@"
